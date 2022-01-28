@@ -32,7 +32,7 @@ public class Test0 extends ApplicationAdapter {
                 cells[i][j] = new Cell();
             }
         }
-        cells[20][20].valueNew = 2000;
+        cells[20][20].valueNew = 200;
     }
     
     public Cell getCell(int i, int j) {

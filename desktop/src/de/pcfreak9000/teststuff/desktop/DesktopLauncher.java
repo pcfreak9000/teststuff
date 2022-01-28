@@ -8,7 +8,7 @@ import de.pcfreak9000.teststuff.Test0;
 public class DesktopLauncher {
 	public static void main (String[] arg) {
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
-		config.setForegroundFPS(30);
+		config.setForegroundFPS(14);
 		new Lwjgl3Application(new Test0(), config);
 	}
 }

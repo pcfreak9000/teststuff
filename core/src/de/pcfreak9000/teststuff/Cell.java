@@ -10,10 +10,11 @@ public class Cell {
     public float valueNew;
     
     private float maxValue = 1;
-    private float maxComp = 0.01f;
     
-    private float flowMin = 0.001f;
+    private float maxComp = 0.01f;
+    private float flowMin = 0;//0.001f;
     private float flowSpeed = 1;
+    private boolean flowUp = false;//?
     
     public Color getColor() {
         return value > 0 ? Color.BLUE : Color.GRAY;
@@ -24,7 +25,7 @@ public class Cell {
     }
     
     private float calculateVerticalFlowValue(float remainingLiquid, Cell destination) {
-        float sum = remainingLiquid + destination.value;
+        float sum = remainingLiquid + destination.getValue();
         float value = 0;
         
         if (sum <= maxValue) {
@@ -38,20 +39,20 @@ public class Cell {
         return value;
     }
     
-    private float getFlowForDirection(Direction dir, Cell neigh) {
+    private float getFlowForDirection(Direction dir, Cell neigh, float v) {
         float flow = 0;
-        if (dir == Direction.Down) {
-            flow = calculateVerticalFlowValue(valueNew, neigh) - neigh.value;
-            if (neigh.valueNew > 0 && flow > flowMin) {
+        if ((dir == Direction.Down && !flowUp) || (dir == Direction.Up && flowUp)) {
+            flow = calculateVerticalFlowValue(v, neigh) - neigh.getValue();
+            if (neigh.getValue() > 0 && flow > flowMin) {//war neigh.valueNew vorher, gehts so auch?
                 flow *= flowSpeed;
             }
         } else {
-            if (dir == Direction.Up) {
-                flow = valueNew - calculateVerticalFlowValue(valueNew, neigh);
+            if ((dir == Direction.Up && !flowUp) || (dir == Direction.Down && flowUp)) {
+                flow = v - calculateVerticalFlowValue(v, neigh);
             } else if (dir == Direction.Left) {
-                flow = (valueNew - neigh.value) / 4f;
+                flow = (v - neigh.getValue()) / 4f;
             } else if (dir == Direction.Right) {
-                flow = (valueNew - neigh.value) / 5f;
+                flow = (v - neigh.getValue()) / 5f;
             }
             if (flow > flowMin) {
                 flow *= flowSpeed;
@@ -61,13 +62,26 @@ public class Cell {
         return flow;
     }
     
-    public void update(float dt, int tick, int x, int y, Test0 cells) {
+    private void updateValue(int tick) {
         if (tick != lasttick) {
             this.value = this.valueNew;
             this.lasttick = tick;
         }
+    }
+    
+    public float getValue() {
+        return value;
+    }
+    
+    public void addValue(float add) {
+        this.valueNew += add;
+    }
+    
+    public void update(float dt, int tick, int x, int y, Test0 cells) {
+        this.updateValue(tick);
+        float v = getValue();
         for (Direction d : Direction.VONNEUMANN_NEIGHBOURS) {
-            if (valueNew <= 0) {
+            if (v <= 0) {
                 return;
             }
             int i = x + d.dx;
@@ -75,15 +89,14 @@ public class Cell {
             if (cells.inBounds(i, j)) {
                 Cell ne = cells.getCell(i, j);
                 if (ne != null) {
-                    if (tick != ne.lasttick) {
-                        ne.value = ne.valueNew;
-                        ne.lasttick = tick;
-                    }
-                    float flow = getFlowForDirection(d, ne);
+                    ne.updateValue(tick);
+                    float flow = getFlowForDirection(d, ne, v);
                     if (flow > flowMin) {
-                        flow = MathUtils.clamp(flow, 0, valueNew);
-                        this.valueNew -= flow;
-                        ne.valueNew += flow;
+                        flow = MathUtils.clamp(flow, 0, v);
+                        v -= flow;
+                        //setValue(v); //<- nonono
+                        this.addValue(-flow);
+                        ne.addValue(flow);
                     }
                 }
             }
